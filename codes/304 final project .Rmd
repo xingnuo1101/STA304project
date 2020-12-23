@@ -1,0 +1,197 @@
+---
+title:"Analysis of Difference in 2019 Canadian Federal Election Turnout If Everyone Vote"
+author: Xingnuo Zhang (1006145306)
+date: "December 20, 2020"
+output: pdf_document
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Abstract
+In the analysis, we are eager to determine the difference in the 2019 Canadian Federal Election turnout if everyone participated in the voting. We fit a logistic regression model with three predictors and applied a post-stratification technique with four weighting factors to estimate the proportion of supporting the Liberal party. We found that most citizens believe the ideology of social liberalism profoundly impacts the city development and enhance social value.
+
+# Keywords  
+Election, politic, democracy, Canadian citizenship, voting system, turnout, logistic regression, post-stratification, demographic information
+
+# Introduction  
+For a long time, Canada has followed parliamentary democracy. Specifically, political parties play an essential role in the parliamentary system (Marleau and Montpetit, 2000). There exist five main political parties in Canada, which includes the Liberal party, the Conservative party, the New Democratic Party, the Bloc Québécois, and the Green Party. In order to represent the power of democracy, the Canadian government grant suffrage to all citizens, so that Canadian citizens can act as a candidate in the federal or provincial election to elect their leader. As we know, the party with more votes have a greater chance to become the ruling party in Canada, and the leader of the ruling party will become Prime Minister of Canada successfully. However, each party have their ruling policy and hold different opinions when targeting specific issues. Therefore, it brings a huge difference when different parties dealing with global issues. For instance, the Liberal party support immigration and marijuana legalization, which highlights the tolerance, diversity and positive social values of Canadian society, while other parties may not accept. Under this circumstance, which party be in power becomes a heated topic which worth studying.  
+In the 2019 Canadian Federal Election, according to “Reasons for not voting in the federal election, October 21, 2019”, there are 77% of Canadians participated, which keeps unchanged from the 2015 Federal Election (par.1). In the remaining 23% of Canadians, they are either not show interest in participating in political activity or report they are too busy to vote or suffer from illness (par. 2-4). Besides, there exists a strict standard of voting, so that a significant portion of people who live in Canada are not legal to vote. To be specific, the people who have study or work permit, hold a permanent residency or does not attain legal age on election day, they are not able to participate in any election. From the turnout of 2019 Federal Election, the Prime Minister of Canada Justin Trudeau, which represent the Liberal party, retain in power in the Election (Murphy, 1). Therefore, we are eager to explore the difference in the outcome of the ruling party if all citizens that have voting right participate.  
+In the following research, the difference in the outcome of the 2019 Canadian Federal Election if everyone participated will be analyzed. In order to attain this goal, we will apply logistic regression based on the Canadian Election Study (CES) dataset and carry out the post-stratification technique by using the General Social Survey (GSS) dataset to estimate the proportion of citizens who support the Liberal party.
+
+
+```{r, include = FALSE}
+library(broom) # Helps make the regression results tidier 
+library(here) # Helps make file referencing easier. 
+library(tidyverse) # Helps make programming with R easier
+library(lme4)
+library(knitr)
+library(scales)
+```
+
+```{r setup, include = FALSE}
+# Loading in the cleaned survey Data
+survey <- read.csv("/Users/maomao/Desktop/sta304/final project/survey_data.csv")
+
+# Loading in the cleaned post stratification Data
+census <- read.csv("/Users/maomao/Desktop/sta304/final project/post_census_data.csv")
+```
+
+# Methodology
+## Data
+In order to explore the difference of election outcome, two datasets are inferences in this analysis. Firstly, let's focus on the 2019 Canadian Election Study Online Survey (CES), it includes Canadian citizens' attitudes toward politics and elections. The dataset is collected online through stratified sampling by region and rebalance age and gender in each stratum. The target population is all Canadian citizens and people who have Permanent Residence; The frame population is all Canadian citizens that are legal to vote; The sample contains 37822 observations of 620 variables. The respondents can participate through an online survey platform: Qualtrics (Stephenson et al., pp.8). Besides, based on this survey data, the selected variables include "gender", "education", "yob" and "votechoice", tend to influence the outcome of the proportion of voting liberal party. In the cleaning procedure, "yob" will be transformed to "age"; "votechoice" will be transformed into a binary response variable "vote_liberal". Moreover, the advantages of using this data set as survey data are apparent. It has a large sample size, which provides sufficient and completed information for analysis so that we can draw a precise conclusion. Although there exist a few missing values in the original data, which may decrease the accuracy and liability of outcome, we are able to remove those missing values by appropriate cleaning process.  
+Secondly, targeting on the General Social Survey (GSS) data set, which collected in 2017. The primary objective of GSS is to provide information on particular policy issues of emerging interest (“General Social Study Cycle 31: Families”, pp.3). The target population is all persons whose age is equal or above fifteen in Canada, excluding residents living in Yukon, Northwest Territories and Nunavut and full-time residents of institutions (pp.8); The frame population includes two components. One is the lists of telephone numbers in current use which can found at Statistics Canada; The other is the Address Register (AR), which is a list of dwellings within the ten provinces (pp.8). Besides, the sample data contains 20602 observations of 81 variables. In order to obtain the survey sample, the sampling method is stratified random sampling; they divided ten provinces into strata by geographic areas. In each stratum, Simple Random Sampling without a replacement will be carried out (pp.9). To participate in this survey, respondents can take it by Computer Assisted Telephone Interview (CATI), with their selected language (pp.9). To decrease the effect of Non-response, interviewers would re-contact them again up to two more times and try to motivate them to participate by explaining the importance of this survey (pp.9). After cleaning the data, we obtain a much smaller data set, which includes age, sex, province, education and n. The GSS dataset plays an essential role in performing the post-stratification.
+
+## Model
+Here we applied a logistic regression model to predict the proportion of candidates who support the Liberal party. Specifically, logistic regression is a statistical model that implements a logistic function to model a binary response variable. As we know, there are five main political parties to compete in the election, while we only focused on whether the Liberal party still retain the power in 2019 Canadian Federal Election if everyone participated in the vote. Under this circumstance, the response variable "vote_liberal " is a dichotomous variable where 1 represents support for the Liberal party, and 0 represents voting for either one of the remaining four parties. Therefore, applying a logistic model is appropriate and help us to explore the difference in election outcome to a great extent.  
+
+**Model identification: **
+
+$$ log(\frac{p}{1-p}) = \beta_0 + \beta_1x_{Male} + \beta_2x_{age} + \beta_3x_{Bachelor's degree} + \beta_4x_{Doctorate degree} + \beta_5x_{high school diploma}$$
+$$+ \beta_6x_{Master's degree} + \beta_7x_{No high school diploma} + \epsilon$$
+
+Where: 
+
+- $p$: the proportion of voters who vote for the Liberal Party. 
+
+- $\beta_0$: the intercept term of the logistic model. 
+
+- $\beta_1$: for every additional unit increase in male (in other words, going from female to male), we expect a $\beta_1$ increase in the log-odds of the response variable vote_liberal. 
+
+- $\beta_2$: for every additional unit increase in age, we expect a $\beta_2$ increase in the log odds of the response variable vote_liberal. 
+
+- $\beta_3$, $\beta_4$, $\beta_5$, $\beta_6$ and $\beta_7$ : similar to $\beta_1$, but corresponding to different sub unit of variable education.
+
+- $\epsilon$, the error term of the model.
+
+Let's fit the logistic regression model:   
+```{r model, echo = FALSE}
+# Creating the logistic model
+my_model <- glm(vote_liberal ~ sex + age + education, data = survey, 
+                family = "binomial")
+
+tidied = tidy(my_model)
+
+kable(tidied, caption = " Logistic Model")
+```
+From the summary of the model we have in Table 1, the logistic regression model specifies as:  
+
+$$log(\frac{p}{1-p}) = -1.274021 + 0.030363x_{Male} + 0.003509x_{age} +0.395023x_{Bachelor's degree}$$ 
+$$+0.408365x_{Doctorate degree} - 0.042516x_{High scholol diploma}$$
+$$+ 0.603399x_{Master's degree} - 0.116939x_{No high scholol diploma}$$
+In the logistic regression model, the selected variables: “age” and “sex”, which represent demographic characteristic, and the variable “education” represents the socioeconomic status of candidates. In this case, we divide “education” to five specific sub-unit depends on different education level to do better estimation, which includes Doctorate degree, Master’s degree, Bachelor’s degree, High school diploma and No high school diploma. We classify education into different categories because the higher the education level that one received, the fewer difficulties they master the bureaucratic process (“Does Education Influence Voter Turnout?”, par.10). Besides, educated people are concern about the Federal election and would like to participate in the vote to express their view of political parties. From the logistic model summary table, we can see that the p-value of the “Bachelor’s degree”, “Doctorate degree” and “Master’s degree” is smaller than the benchmark 5%, so that the education is a significant predictor which influences the proportion of voting the Liberal party.
+
+## Post-stratification
+
+```{r, include = FALSE}
+# performing post-stratification calculation to estimate the proportion of voting Liberal if everyone participated
+
+census$logodds_estimate <-
+  my_model %>%
+  predict(newdata = census)
+
+census$estimate <-
+  exp(census$logodds_estimate)/(1+exp(census$logodds_estimate))
+
+yhat = census %>%
+  mutate(alp_predict_prop = estimate * n)%>%
+  summarise(alp_predict = sum(alp_predict_prop)/sum(n))
+```
+The post-stratification technique defines as dividing sample census data into post-strata by different estimators and adjusting weight within each post-stratum. It provides an effective way to decrease bias by eliminating non-response and underrepresented groups (“Poststratification - Poststratification for Survey Data”, pp.1). We classified the sample data into cells by four weighting factors, which includes: age, sex, education and province. There are three criteria to select these factors:  
+
+1.  The variables have a close relationship in affecting the voting decision.  
+2.  The variables in census data are consistent with the variables in survey data that we selected before.  
+3.  There are not exist too many missing values, which increases the accuracy and liability of estimate. 
+
+# Results
+According to the post-stratification prediction of the proportion of supporting the Liberal party if everyone participated and the logistic regression model we fit with predictors age, sex and education, the proportion of voters support the Liberal party is 27.56%. Therefore, the Liberal party still in power if everyone voted. Specifically, if one party wins more than 20% votes, regardless of the Commons of Canada vote, it has a greater probability becoming the ruling party. In this case, it implies that the majority of Canadian citizens believe the political ideology of the Liberal party would contribute to a bright future as they praise social liberalism and high human rights. For instance, targeting on receiving refugees and immigrant issue, the Liberal party, hold a favorable opinion. For a long time, Justin Trudeau is willing to expand the target number of receiving refugees who suffer from the Syrian war and provide sponsorship (“What the Party Say About Immigration”, par.25). Besides, the Liberal government state that provides compassion and employment opportunity to either refugees or immigrant is inevitable to help them start their new life with a new identity in Canada (par.3).  
+Here is a pie chart that clearly illustrates the result:  
+
+```{r, fig.align = "center"}
+df <- data.frame(
+  group = c("Other Four Parties","Liberal Party"),
+  value = c((1-as.numeric(yhat))*100, (as.numeric(yhat))*100))
+
+pie<- ggplot(df, aes(x="", y=value, fill=group))+
+  geom_bar(width = 1, stat = "identity") + 
+  coord_polar("y", start=0)
+
+pie + scale_fill_brewer(palette="Blues",name = "Political Parties")+
+  theme(axis.text.x=element_blank())+
+  geom_text(aes(y = value/3 + c(0, cumsum(value)[-length(value)]), label = percent(value/100)), size=5)  + 
+  xlab("") + 
+  ylab("Proportion of voting for the Liberal Party") + 
+  ggtitle("Graph 1 - Proportion of Voting")
+```
+
+# Discussion
+## Summary
+The analysis contributes to exploring whether there is any difference in the 2019 Canadian Federal Election outcome if everyone who can vote participated. Two data sets are cleaned and used in our prediction, which includes 2019 Canadian Election Study Online Survey (CES) and the 2017 General Social Survey (GSS). To attain our goal, the logistic regression model with post-stratification technique implemented to estimate the probability of supporting the Liberal party. From the fitted logistic model, the variables sex, age and education are included. Besides, four weighting factors are selected to carry out the post-stratification calculation. Based on the probability we get, we can safely conclude that around 28% of citizens support the Liberal party, which means the Liberal party still be the ruling party if everyone voted.
+
+## Conclusions
+According to the estimated probability by logistic regression model with post-stratification, we can conclude that there does not exist a difference in the 2019 Federal Election turnout if everyone voted, the Liberal party still won the election. Around 28% of citizens vote for the Liberal party, which exceeds either one of the remaining parties. The probability of supporting the Liberal party implies that most citizens are satisfied with the current ruling party, agree with its political ideology, foreign policy and attitudes toward international issues. Besides, citizens believe that social liberalism would enhance positive social value and help Canada attain more success in the future.
+
+## Weakness
+However, we cannot ignore the weaknesses of our analysis:  
+
+1.	The GSS data set is collected in 2017, while the turnout of the election that we predict occurs in 2019. Therefore, the data is not keeping pace with the election. The respondents may change their minds due to emerging political changes.  
+2.	There are other factors worth exploring, which also affect the 2019 Canadian Federal Election outcome and need to add them to the logistic model's predictors. While in the dataset we obtained and cleaned, there are only three predictors to represent, which may lead to underfitting.  
+3.	In these data sets, we only considered the voter voting and ignored House voting. Sometimes, the voter voting may not play a significant role in determining which political party become the ruling party.  
+
+## Next Steps
+1.  We can combine more real census and survey data sets and apply the Bayesian Information Criterion to select the explanatory variables more precisely, which improves the accuracy of the model prediction.  
+2.	We can carry out a multilevel regression model with post-stratification technique or apply a time series model to analyze the time effect of election.  
+
+## References  
+Dataset citation:  
+1. Stephenson, Laura B; Harell, Allison; Rubenson, Daniel; Loewen, Peter John, “2019 Canadian Election Study - Online Survey”, Harvard Dataverse, 2020, https://doi.org/10.7910/DVN/DUS88V  
+2. “General Social Survey Cycle 31: Family, 2017”, Statistics Canada, 2020, 
+https://hdl.handle.net/11272.1/AB2/G3DUFG  
+
+R Studio citation:  
+RStudio Team (2020). RStudio: Integrated Development Environment for R. RStudio, PBC,Boston, MA URL 
+http://www.rstudio.com/.  
+
+R Package citation:  
+1. Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43),1686, 
+https://doi.org/10.21105/joss.01686  
+2. David Robinson, Alex Hayes and Simon Couch (2020). broom: Convert Statistical Objects into Tidy Tibbles. R package version 0.7.0. https://CRAN.R-project.org/package=broom  
+3. Kirill Müller (2017). here: A Simpler Way to Find Your Files. R package version 0.1.
+https://CRAN.R-project.org/package=here  
+4. Yihui Xie (2014) knitr: A Comprehensive Tool for Reproducible Research in R. In Victoria Stodden, Friedrich Leisch and Roger D. Peng, editors, Implementing Reproducible Computational Research. 
+Chapman and Hall/CRC. ISBN 978-1466561595  
+5. Douglas Bates, Martin Maechler, Ben Bolker, Steve Walker (2015). Fitting Linear
+Mixed-Effects Models Using lme4. Journal of Statistical Software, 67(1), 1-48.
+doi:10.18637/jss.v067.i01.  
+6. Hadley Wickham and Dana Seidel (2020). scales: Scale Functions for Visualization. R
+package version 1.1.1. https://CRAN.R-project.org/package=scales  
+
+Reference for ideas:   
+1. Marleau, Robert and Montpetit, Camille, House of Commons Procedure and Practice, Jan 2000,
+https://www.ourcommons.ca/marleaumontpetit/DocumentViewer.aspx?Sec=Ch01&Seq=2  
+2. “Reasons for not voting in the federal election, October 21, 2019”, the Daily, Feb 2020,
+https://www150.statcan.gc.ca/n1/daily-quotidien/200226/dq200226b-eng.htm  
+3. “A Guide to Voting in the Canadian Federal Election”, Settlement, Sep 2019,
+https://settlement.org/ontario/immigration-citizenship/canadian-government/voting/a-guide-to-voting-in-the-canadian-federal-election/  
+4. “Canadian Election Study”, Elections Canada,
+https://www.elections.ca/content.aspx?section=res&dir=rec/eval/ces&document=index&lang=e  
+5. Murphy, Jessica, “Justin Trudeau: the Good News-and Bad-for Canada’s PM”, BBC News, Oct 2019,
+https://www.bbc.com/news/world-us-canada-50130391  
+6. “General Social Survey Cycle31: Families”
+https://sda-artsci-utoronto-ca.myaccess.library.utoronto.ca/sdaweb/dli2/gss/gss31/gss31/more_doc/GSS31_User_Guide.pdf  
+7. “Poststratification - Poststratification for Survey Data”, Stata,
+https://www.stata.com/manuals13/svypoststratification.pdf 
+Feess, Simon, “Does Education Influence Voter Turnout”
+https://www.grin.com/document/101356  
+8. “What the Parties Say About Immigration”, Oct 2015,
+https://www.toronto.com/news-story/5952957-what-the-parties-say-about-immigration/  
+9. Linxia Li, Leyi Wang, Xingnuo Zhang, Yanlin Li, “The Prediction of the Outcome of 2020 American Federal Election”, https://github.com/Hiraethwly/STA304ProblemSet3
+
+
+
+
+
+
+
+
